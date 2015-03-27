@@ -4,18 +4,21 @@ Defines views.
 """
 
 import calendar
-from flask import redirect, abort
+import logging
+from collections import OrderedDict
+
+from flask import abort, redirect, render_template, request
+from jinja2 import TemplateNotFound
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
-    jsonify,
     get_data,
-    mean,
     group_by_weekday,
-    group_start_end_by_weekday
+    group_start_end_by_weekday,
+    jsonify,
+    mean
 )
 
-import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -24,7 +27,24 @@ def mainpage():
     """
     Redirects to front page.
     """
-    return redirect('/static/presence_weekday.html')
+    return redirect('/presence_weekday.html')
+
+
+@app.route('/<string:template>', methods=['GET'])
+def template_renderer(template):
+    """
+    Serves page template if exists
+    """
+    context = {}
+    context['pages'] = OrderedDict()
+    context['pages']['presence_weekday'] = 'Presence by weekday'
+    context['pages']['mean_time_weekday'] = 'Presence mean time'
+    context['pages']['presence_start_end'] = 'Presence start-end'
+    context['current_page'] = request.path.split('.')[0][1:]
+    try:
+        return render_template(template, context=context)
+    except TemplateNotFound:
+        abort(404)
 
 
 @app.route('/api/v1/users', methods=['GET'])
