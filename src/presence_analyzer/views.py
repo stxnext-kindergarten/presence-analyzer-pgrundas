@@ -7,8 +7,9 @@ import calendar
 import logging
 from collections import OrderedDict
 
-from flask import abort, redirect, render_template, request
-from jinja2 import TemplateNotFound
+from flask import abort, redirect, request
+from flask.ext.mako import render_template
+from mako.exceptions import TopLevelLookupException
 
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
@@ -42,8 +43,8 @@ def template_renderer(template):
     context['pages']['presence_start_end'] = 'Presence start-end'
     context['current_page'] = request.path.split('.')[0][1:]
     try:
-        return render_template(template, context=context)
-    except TemplateNotFound:
+        return render_template(template, args=context)
+    except TopLevelLookupException:
         abort(404)
 
 

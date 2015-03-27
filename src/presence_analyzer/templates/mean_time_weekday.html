@@ -1,15 +1,15 @@
-{% extends 'base.html' %}
+<%inherit file="base.html"/>
 
-{% block heading %}
+<%block name="heading">
 Presence mean time by weekday
-{% endblock heading %}
+</%block>
 
-{% block aditional_javascript %}
+<%block name="aditional_javascript">
 <script type="text/javascript">
     (function($) {
         $(document).ready(function() {
             var loading = $('#loading');
-            $.getJSON("{{ url_for('users_view') }}", function(result) {
+            $.getJSON("${ url_for('users_view') }", function(result) {
                 var dropdown = $("#user_id");
                 $.each(result, function(item) {
                     dropdown.append($("<option />").val(this.user_id).text(this.name));
@@ -23,7 +23,7 @@ Presence mean time by weekday
                 if(selected_user) {
                     loading.show();
                     chart_div.hide();
-                    $.getJSON("{{ url_for('mean_time_weekday_view', user_id=0) }}"+selected_user, function(result) {
+                    $.getJSON("${ url_for('mean_time_weekday_view', user_id=0) }"+selected_user, function(result) {
                         $.each(result, function(index, value) {
                             value[1] = parseInterval(value[1]);
                         });
@@ -46,4 +46,4 @@ Presence mean time by weekday
         });
     })(jQuery);
 </script>
-{% endblock aditional_javascript %}
+</%block>
