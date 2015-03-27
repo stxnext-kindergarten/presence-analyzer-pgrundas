@@ -1,7 +1,7 @@
 <ul>
-    {% for link, description in context.pages.items() %}
-        <li{% if link == context.current_page %} id='selected'{% endif %}>
-            <a href="{{ url_for('template_renderer', template=link) }}.html">{{ description }}</a>
+    % for link, description in args['pages'].items():
+        <li${' id=selected' if args['current_page'] == link else ''}>
+            <a href="${ url_for('template_renderer', template=link) }.html">${ description }</a>
         </li>
-    {% endfor %}
+    % endfor
 </ul>

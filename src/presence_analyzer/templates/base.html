@@ -1,26 +1,26 @@
-{% set title = 'Presence analyzer' %}
+<% title = 'Presence analyzer' %>
 <!doctype html>
 <html lang=en>
 <head>
     <meta charset=utf-8>
-    <title>{{ title }}</title>
+    <title>${ title }</title>
     <meta name="keywords" content="" />
     <meta name="description" content=""/>
     <meta name="author" content="STX Next sp. z o.o."/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% include 'css.html' %}
-    {% include 'javascript.html' %}
-    {% block aditional_javascript %}{% endblock aditional_javascript %}
+    <%include file="css.html"/>
+    <%include file="javascript.html"/>
+    <%block name="aditional_javascript"/>
 </head>
 <body>
     <div id="main">
         <div id="header">
-            <h1>{{ title }}</h1>
-            {% include 'navigation.html' %}
+            <h1>${ title }</h1>
+            <%include file="navigation.html"/>
         </div>
         <div id="content">
-            {% block content %}
-            <h2>{% block heading %}{% endblock heading %}</h2>
+            <%block name="content">
+            <h2><%block name="heading"/></h2>
             <p>
                 <select id="user_id" style="display: none">
                     <option value="">--</option>
@@ -28,10 +28,10 @@
                 <div id="chart_div" style="display: none">
                 </div>
                 <div id="loading">
-                    <img src="{{ url_for('static', filename='img/loading.gif') }}" />
+                    <img src="${ url_for('static', filename='img/loading.gif') }" />
                 </div>
             </p>
-            {% endblock content %}
+            </%block>
         </div>
     </div>
 </body>
