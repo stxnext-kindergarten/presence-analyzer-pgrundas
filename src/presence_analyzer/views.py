@@ -6,6 +6,7 @@ Defines views.
 import calendar
 import logging
 from collections import OrderedDict
+from operator import itemgetter
 
 from flask import abort, redirect, request
 from flask.ext.mako import render_template
@@ -15,6 +16,7 @@ from presence_analyzer.main import app
 from presence_analyzer.utils import (
     get_data,
     group_by_weekday,
+    get_users_from_xml,
     group_start_end_by_weekday,
     jsonify,
     mean
@@ -54,11 +56,15 @@ def users_view():
     """
     Users listing for dropdown.
     """
-    data = get_data()
-    return [
-        {'user_id': i, 'name': 'User {0}'.format(str(i))}
-        for i in data.keys()
+    data = get_users_from_xml()
+    users = [{
+            'user_id': user_id,
+            'name': data[user_id]['name'],
+            'avatar': data[user_id]['avatar']
+        }
+        for user_id in data
     ]
+    return sorted(users, key=itemgetter('name'))
 
 
 @app.route('/api/v1/mean_time_weekday/<int:user_id>', methods=['GET'])
@@ -69,15 +75,17 @@ def mean_time_weekday_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User %s not found!', user_id)
-        abort(404)
+        log.debug('User {} not found!'.format(user_id))
+        return {
+            'message': 'User {} not found!'.format(user_id),
+            'status': 404
+        }
 
     weekdays = group_by_weekday(data[user_id])
-    result = [
+    return [
         (calendar.day_abbr[weekday], mean(intervals))
         for weekday, intervals in enumerate(weekdays)
     ]
-    return result
 
 
 @app.route('/api/v1/presence_weekday/<int:user_id>', methods=['GET'])
@@ -88,15 +96,17 @@ def presence_weekday_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User %s not found!', user_id)
-        abort(404)
+        log.debug('User {} not found!'.format(user_id))
+        return {
+            'message': 'User {} not found!'.format(user_id),
+            'status': 404
+        }
 
     weekdays = group_by_weekday(data[user_id])
     result = [
         (calendar.day_abbr[weekday], sum(intervals))
         for weekday, intervals in enumerate(weekdays)
     ]
-
     result.insert(0, ('Weekday', 'Presence (s)'))
     return result
 
@@ -109,15 +119,17 @@ def presence_start_end_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User %s not found!', user_id)
-        abort(404)
+        log.debug('User {} not found!'.format(user_id))
+        return {
+            'message': 'User {} not found!'.format(user_id),
+            'status': 404
+        }
 
     weekdays = group_start_end_by_weekday(data[user_id])
-    result = [(
-            calendar.day_abbr[weekday],
-            mean(intervals['start']),
-            mean(intervals['end'])
-        )
+    return [(
+        calendar.day_abbr[weekday],
+        mean(intervals['start']),
+        mean(intervals['end'])
+    )
         for weekday, intervals in enumerate(weekdays)
     ]
-    return result

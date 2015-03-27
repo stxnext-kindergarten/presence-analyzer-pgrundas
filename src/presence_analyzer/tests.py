@@ -2,16 +2,20 @@
 """
 Presence analyzer unit tests.
 """
-import os.path
-import json
+from __future__ import unicode_literals
+
 import datetime
+import json
+import os.path
 import unittest
 
 from presence_analyzer import main, utils
 
-
 TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
+)
+TEST_DATA_XML = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_users.xml'
 )
 
 
@@ -26,6 +30,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         Before each test, set up a environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({'USERS_XML': TEST_DATA_XML})
         self.client = main.app.test_client()
 
     def tearDown(self):
@@ -71,7 +76,19 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
         self.assertEqual(len(data), 2)
-        self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
+        user_11 = {
+            'user_id': 11,
+            'name': 'Maciej D.',
+            'avatar': 'https://intranet.stxnext.pl/api/images/users/11'
+        }
+        user_10 = {
+            'user_id': 10,
+            'name': 'Maciej Z.',
+            'avatar': 'https://intranet.stxnext.pl/api/images/users/10'
+        }
+        self.assertDictEqual(data[0], user_11)
+        self.assertDictEqual(data[1], user_10)
+        self.assertListEqual(data, [user_11, user_10])
 
     def test_mean_time_weekday_view(self):
         """
@@ -86,7 +103,12 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertNotEqual(data[1][1], 0)
 
         resp = self.client.get('/api/v1/mean_time_weekday/9')
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content_type, 'application/json')
+        json_data = json.loads(resp.data)
+        self.assertDictEqual(json_data, {
+            'status': 404,
+            'message': 'User 9 not found!'
+        })
 
     def test_presence_weekday_view(self):
         """
@@ -98,17 +120,29 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         data = json.loads(resp.data)
         self.assertEqual(len(data[0]), 2)
         self.assertEqual(len(data), 8)
-        self.assertEqual(data[4], [u'Thu', 23705])
+        self.assertEqual(data[4], ['Thu', 23705])
 
-        resp = self.client.get('/api/v1/mean_time_weekday/5')
-        self.assertEqual(resp.status_code, 404)
+        resp = self.client.get('/api/v1/presence_weekday/1')
+        self.assertEqual(resp.content_type, 'application/json')
+        self.assertEqual(resp.status_code, 200)
+        json_data = json.loads(resp.data)
+        self.assertDictEqual(json_data, {
+            'status': 404,
+            'message': 'User 1 not found!'
+        })
 
     def test_presence_start_end_view(self):
         """
         Test presence_start_end_view.
         """
-        resp = self.client.get('/api/v1/presence_start_end/5')
-        self.assertEqual(resp.status_code, 404)
+        resp = self.client.get('/api/v1/presence_weekday/2')
+        self.assertEqual(resp.content_type, 'application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertDictEqual(data, {
+            'status': 404,
+            'message': 'User 2 not found!'
+        })
 
         resp = self.client.get('/api/v1/presence_start_end/10')
         self.assertEqual(resp.status_code, 200)
@@ -118,7 +152,6 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(len(data[1]), 3)
         self.assertEqual(len(data[2]), 3)
         self.assertIn('Tue', data[1])
-        self.assertNotEqual(data[1], 0)
         self.assertEqual(data[2][1], 33592.0)
         self.assertEqual(data[3][2], 62631.0)
 
@@ -126,15 +159,16 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content_type, 'application/json')
         data = json.loads(resp.data)
-        self.assertEqual(data, [
-             ["Mon", 33134, 57257],
-             ["Tue", 33590, 50154],
-             ["Wed", 33206, 58527],
-             ["Thu", 35602, 58586],
-             ["Fri", 47816, 54242],
-             ["Sat", 0, 0],
-             ["Sun", 0, 0]
-        ])
+        self.assertListEqual(data, [
+                ['Mon', 33134.0, 57257.0],
+                ['Tue', 33590.0, 50154.0],
+                ['Wed', 33206.0, 58527.0],
+                ['Thu', 35602.0, 58586.0],
+                ['Fri', 47816.0, 54242.0],
+                ['Sat', 0, 0],
+                ['Sun', 0, 0]
+            ]
+        )
 
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
@@ -147,12 +181,26 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         Before each test, set up a environment.
         """
         main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({'USERS_XML': TEST_DATA_XML})
 
     def tearDown(self):
         """
         Get rid of unused objects after each test.
         """
         pass
+
+    def test_get_users_from_xml(self):
+        data = utils.get_users_from_xml()
+        self.assertDictEqual(data, {
+            11: {
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/11',
+                'name': 'Maciej D.'
+            },
+            10: {
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/10',
+                'name': 'Maciej Z.'
+            }
+        })
 
     def test_get_data(self):
         """
