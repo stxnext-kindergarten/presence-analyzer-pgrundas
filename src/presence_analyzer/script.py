@@ -4,6 +4,7 @@
 
 import os
 import sys
+import urllib
 from functools import partial
 
 import paste.script.command
@@ -16,6 +17,7 @@ DEPLOY_CFG = etc('deploy.cfg')
 
 DEBUG_INI = etc('debug.ini')
 DEBUG_CFG = etc('debug.cfg')
+
 
 _buildout_path = __file__
 for i in range(2 + __name__.count('.')):
@@ -109,5 +111,16 @@ def run():
     def action_stop(dry_run=False):
         """Stop the application."""
         _serve('stop', dry_run=dry_run)
+
+    # bin/fkask-ctl update_users
+    def action_update_users():
+        """
+        Update users.xml
+        """
+        app = make_app()
+        urllib.urlretrieve(
+                app.config['USERS_XML_LINK'], app.config['USERS_XML']
+            )
+        print "users.xml updated."
 
     werkzeug.script.run()

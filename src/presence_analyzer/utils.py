@@ -4,15 +4,16 @@ Helper functions used in views.
 """
 
 import csv
-from json import dumps
-from functools import wraps
+import logging
 from datetime import datetime
+from functools import wraps
+from json import dumps
 
 from flask import Response
+from lxml import etree
 
 from presence_analyzer.main import app
 
-import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
@@ -30,6 +31,35 @@ def jsonify(function):
             mimetype='application/json'
         )
     return inner
+
+
+def get_users_from_xml():
+    """
+    Extracts user informations from user.xml and groups it by user_id
+
+    Example structure:
+    users = {
+        '151': {
+            'avatar': '/api/images/users/151',
+            'name': 'Dawid J.'
+        },
+        '150': {
+            'avatar': '/api/images/users/150',
+            'name': u'Kamil G.'
+        }
+    """
+    tree = etree.parse(app.config['USERS_XML'])
+    api_url = '{}://{}'.format(
+        tree.find('server').find('protocol').text,
+        tree.find('server').find('host').text
+    )
+    result = {}
+    for user in tree.find('users'):
+        result[int(user.get('id'))] = {
+            'name': unicode(user.find('name').text),
+            'avatar': '{}{}'.format(api_url, user.find('avatar').text)
+        }
+    return result
 
 
 def get_data():

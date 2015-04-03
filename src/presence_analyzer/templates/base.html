@@ -5,28 +5,68 @@
     <meta charset=utf-8>
     <title>${ title }</title>
     <meta name="keywords" content="" />
-    <meta name="description" content=""/>
+    <meta name="description" content="" />
     <meta name="author" content="STX Next sp. z o.o."/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <%include file="css.html"/>
-    <%include file="javascript.html"/>
-    <%block name="aditional_javascript"/>
+    <%include file="css.html" />
+    <%include file="javascript.html" />
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function() {
+                var loading = $('#loading'),
+                    users_data = {},
+                    chart_div = $('#chart_div'),
+                    avatar = $('#user_avatar'),
+                    alerts_div = $('#alerts'),
+                    dropdown = $("#user_id");
+
+                $.getJSON("${ url_for('users_view') }", function(result) {
+                    $.each(result, function(item) {
+                        dropdown.append($("<option />").val(this.user_id).text(this.name));
+                        users_data[this.user_id] = {
+                            "user_id": this.user_id,
+                            "name": this.name,
+                            "avatar": this.avatar
+                        };
+                    });
+                    dropdown.show();
+                    loading.hide();
+                });
+
+                $('#user_id').change(function() {
+                    var selected_user = $("#user_id").val();
+                    if (selected_user) {
+                        if (alerts_div.children().length > 0)
+                            alerts_div.empty();
+                        avatar.hide().attr('src', '');
+                        loading.show();
+                        chart_div.hide();
+
+                        <%block name="if_user_selected_js" />
+                    }
+                });
+           });
+        })(jQuery);
+    </script>
 </head>
 <body>
     <div id="main">
         <div id="header">
             <h1>${ title }</h1>
-            <%include file="navigation.html"/>
+            <%include file="navigation.html" />
         </div>
         <div id="content">
             <%block name="content">
-            <h2><%block name="heading"/></h2>
+            <h2><%block name="heading" /></h2>
             <p>
                 <select id="user_id" style="display: none">
                     <option value="">--</option>
                 </select>
-                <div id="chart_div" style="display: none">
+                <div id='avatar_container'>
+                    <img id='user_avatar' src='' alt='' />
                 </div>
+                <div id='alerts'></div>
+                <div id="chart_div" style="display: none"></div>
                 <div id="loading">
                     <img src="${ url_for('static', filename='img/loading.gif') }" />
                 </div>

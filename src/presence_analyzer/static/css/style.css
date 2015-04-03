@@ -59,3 +59,17 @@ body {
     color: black;
     font-weight: bold;
 }
+#user_avatar {
+    display: none;
+    width: 100px;
+    height: 100px;
+}
+#error {
+    font-size: 20px;
+    color: red;
+    text-align: center;
+}
+#alerts {
+    display: block;
+    margin: 0 auto;
+}
