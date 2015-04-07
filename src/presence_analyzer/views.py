@@ -57,7 +57,8 @@ def users_view():
     Users listing for dropdown.
     """
     data = get_users_from_xml()
-    users = [{
+    users = [
+        {
             'user_id': user_id,
             'name': data[user_id]['name'],
             'avatar': data[user_id]['avatar']
@@ -75,7 +76,7 @@ def mean_time_weekday_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User {} not found!'.format(user_id))
+        log.debug('User %s not found!', user_id)
         return {
             'message': 'User {} not found!'.format(user_id),
             'status': 404
@@ -96,7 +97,7 @@ def presence_weekday_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User {} not found!'.format(user_id))
+        log.debug('User %s not found!', user_id)
         return {
             'message': 'User {} not found!'.format(user_id),
             'status': 404
@@ -119,17 +120,18 @@ def presence_start_end_view(user_id):
     """
     data = get_data()
     if user_id not in data:
-        log.debug('User {} not found!'.format(user_id))
+        log.debug('User %s not found!', user_id)
         return {
             'message': 'User {} not found!'.format(user_id),
             'status': 404
         }
 
     weekdays = group_start_end_by_weekday(data[user_id])
-    return [(
-        calendar.day_abbr[weekday],
-        mean(intervals['start']),
-        mean(intervals['end'])
-    )
+    return [
+        (
+            calendar.day_abbr[weekday],
+            mean(intervals['start']),
+            mean(intervals['end'])
+        )
         for weekday, intervals in enumerate(weekdays)
     ]

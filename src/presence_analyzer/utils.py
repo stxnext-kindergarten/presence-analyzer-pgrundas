@@ -4,7 +4,10 @@ Helper functions used in views.
 """
 
 import csv
+import hashlib
 import logging
+import threading
+import time
 from datetime import datetime
 from functools import wraps
 from json import dumps
@@ -15,6 +18,41 @@ from lxml import etree
 from presence_analyzer.main import app
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+CACHE = {}
+
+
+def lock(function):
+    """
+    Decorator for preventing using a function at the same time.
+    """
+    @wraps(function)
+    def inner(*args, **kwargs):  # pylint: disable=missing-docstring
+        with threading.Lock():
+            return function(*args, **kwargs)
+    return inner
+
+
+def cache(duration):
+    """
+    Decorator for caching the result of a function.
+    """
+    def decorator(function):  # pylint: disable=missing-docstring
+        @wraps(function)
+        def inner(*args, **kwargs):  # pylint: disable=missing-docstring
+            key = hashlib.sha1(function.__name__).hexdigest()
+            current_time = int(time.time() * 1000)
+            if key in CACHE and current_time - CACHE[key]['time'] < duration:
+                return CACHE[key]['data']
+
+            result = function(*args, **kwargs)
+            CACHE[key] = {
+                'data': result,
+                'time': current_time
+            }
+            return result
+        return inner
+    return decorator
 
 
 def jsonify(function):
@@ -35,7 +73,7 @@ def jsonify(function):
 
 def get_users_from_xml():
     """
-    Extracts user informations from user.xml and groups it by user_id
+    Extracts user informations from user.xml and groups it by user_id.
 
     Example structure:
     users = {
@@ -62,6 +100,8 @@ def get_users_from_xml():
     return result
 
 
+@lock
+@cache(600)
 def get_data():
     """
     Extracts presence data from CSV file and groups it by user_id.
@@ -117,7 +157,7 @@ def group_start_end_by_weekday(items):
     """
     Groups presence entrences/leaves grouped by weekday.
     """
-    result = [{'start': [], 'end': []} for i in xrange(7)]
+    result = [{'start': [], 'end': []} for _ in xrange(7)]
 
     for date in items:
         start = items[date]['start']
@@ -128,7 +168,7 @@ def group_start_end_by_weekday(items):
     return result
 
 
-def seconds_since_midnight(time):
+def seconds_since_midnight(time):  # pylint: disable=redefined-outer-name
     """
     Calculates amount of seconds since midnight.
     """
