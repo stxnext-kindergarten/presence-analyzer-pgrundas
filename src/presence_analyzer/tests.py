@@ -10,6 +10,7 @@ import json
 import time
 import os.path
 import unittest
+from datetime import timedelta
 
 from presence_analyzer import main, utils
 
@@ -171,6 +172,36 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ['Sun', 0, 0]
         ])
 
+    def test_weekly_mean_presence_view(self):
+        """
+        Test weekly_mean_presence_view.
+        """
+        resp = self.client.get('/api/v1/weekly_mean_presence/2')
+        self.assertEqual(resp.content_type, 'application/json')
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertDictEqual(data, {
+            'status': 404,
+            'message': 'User 2 not found!'
+        })
+
+        resp = self.client.get('/api/v1/weekly_mean_presence/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        data = json.loads(resp.data)
+        self.assertListEqual(data, [
+            ['Activity', 'Total hours'],
+            ['Worked hours', 21.43],
+            ['Off hours', 146.16]
+        ])
+
+        resp = self.client.get('/api/v1/weekly_mean_presence/11')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        data = json.loads(resp.data)
+        self.assertListEqual(data[1], ['Worked hours', 26.3])
+        self.assertEqual(data[2][1], 141.29)
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -189,6 +220,34 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         Get rid of unused objects after each test.
         """
         pass
+
+    def test_sum_timedelta(self):
+        """
+        Test converting timedelta to hours.
+        """
+        delta = utils.sum_timedelta(timedelta(hours=168))
+        self.assertEqual(delta, 168.0)
+
+        delta = utils.sum_timedelta(timedelta(days=9, hours=9, seconds=99,
+                                              milliseconds=9999))
+        self.assertEqual(delta, 225.1)
+
+        delta = utils.sum_timedelta(timedelta(days=3, hours=5, seconds=500))
+        self.assertEqual(delta, 77.8)
+
+    def test_sum_intervals(self):
+        """
+        Test summing intervals.
+        """
+        intervals = [29508.076923076922, 28530.076923076922, 29702.75,
+                     29721.833333333332, 29069.272727272728, 45037.0, 0]
+        self.assertTupleEqual(utils.sum_intervals(intervals), (53.12, 114.47))
+
+        intervals = [33134.0, 57257.0, 33590.0, 50154.0, 33206.0, 58527.0]
+        self.assertTupleEqual(utils.sum_intervals(intervals), (73.51, 94.8))
+
+        intervals = [0, 0, 56.0, 0, 0, 27.0]
+        self.assertTupleEqual(utils.sum_intervals(intervals), (0.1, 167.58))
 
     def test_cache(self):
         """

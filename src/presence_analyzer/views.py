@@ -19,7 +19,8 @@ from presence_analyzer.utils import (
     get_users_from_xml,
     group_start_end_by_weekday,
     jsonify,
-    mean
+    mean,
+    sum_intervals
 )
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -43,6 +44,7 @@ def template_renderer(template):
     context['pages']['presence_weekday'] = 'Presence by weekday'
     context['pages']['mean_time_weekday'] = 'Presence mean time'
     context['pages']['presence_start_end'] = 'Presence start-end'
+    context['pages']['weekly_mean_presence'] = 'Weekly presence'
     context['current_page'] = request.path.split('.')[0][1:]
     try:
         return render_template(template, args=context)
@@ -134,4 +136,27 @@ def presence_start_end_view(user_id):
             mean(intervals['end'])
         )
         for weekday, intervals in enumerate(weekdays)
+    ]
+
+
+@app.route('/api/v1/weekly_mean_presence/<int:user_id>', methods=['GET'])
+@jsonify
+def weekly_mean_presence_view(user_id):
+    """
+    Returns mean
+    """
+    data = get_data()
+    if user_id not in data:
+        log.debug('User %s not found!', user_id)
+        return {
+            'message': 'User {} not found!'.format(user_id),
+            'status': 404
+        }
+
+    weekdays = group_by_weekday(data[user_id])
+    worked_hours, off_hours = sum_intervals([mean(day) for day in weekdays])
+    return [
+        ['Activity', 'Total hours'],
+        ['Worked hours', worked_hours],
+        ['Off hours', off_hours],
     ]
