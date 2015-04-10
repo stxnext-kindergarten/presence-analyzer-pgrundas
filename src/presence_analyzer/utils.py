@@ -8,7 +8,7 @@ import hashlib
 import logging
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from json import dumps
 
@@ -166,6 +166,32 @@ def group_start_end_by_weekday(items):
         result[date.weekday()]['end'].append(seconds_since_midnight(end))
 
     return result
+
+
+def sum_timedelta(interval):  # pylint: disable=redefined-outer-name
+    """
+    Sums timedelta time and returns float in HH.MM.
+    """
+    hours, remainder = divmod(interval.seconds, 3600)
+    minutes, _ = divmod(remainder, 60)
+    hours = hours + (interval.days * 24)
+    return float('{}.{}'.format(hours, minutes))
+
+
+def sum_intervals(items):
+    """
+    Sums weekday intervals and returns tuple with the sum of worked hours and
+    off time hours.
+    """
+    worked_interval = timedelta()
+    whole_week = timedelta(hours=168)
+
+    for interval in items:  # pylint: disable=redefined-outer-name
+        worked_interval += timedelta(seconds=(interval))
+
+    off_interval = whole_week - worked_interval
+
+    return sum_timedelta(worked_interval), sum_timedelta(off_interval)
 
 
 def seconds_since_midnight(time):  # pylint: disable=redefined-outer-name

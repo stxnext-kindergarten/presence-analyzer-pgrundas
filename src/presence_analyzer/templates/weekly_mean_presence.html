@@ -1,0 +1,28 @@
+<%inherit file="base.html"/>
+
+<%block name="heading">
+Weekly mean time presence
+</%block>
+
+<%block name="if_user_selected_js">
+$.getJSON("${ url_for('weekly_mean_presence_view', user_id=0) }"+selected_user, function(result) {
+    avatar.attr('src', users_data[selected_user].avatar).show();
+    if (result.status == 404) {
+        alerts_div.append($('<p id="error">').text('No user data.'));
+        loading.hide();
+        avatar.show();
+        return false;
+    }
+    var data = google.visualization.arrayToDataTable(result),
+        options = {
+            is3D: true,
+            legend: { position: 'top' , alignment: 'center'}
+        },
+        chart = new google.visualization.PieChart(chart_div[0]);
+    chart.draw(data, options);
+    chart_div.show();
+    avatar.show();
+    loading.hide();
+    chart.draw(data, options);
+});
+</%block>
