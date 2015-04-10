@@ -4,6 +4,7 @@ Defines views.
 """
 
 import calendar
+import locale
 import logging
 from collections import OrderedDict
 from operator import itemgetter
@@ -24,6 +25,7 @@ from presence_analyzer.utils import (
 )
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+locale.setlocale(locale.LC_ALL, '')
 
 
 @app.route('/')
@@ -67,7 +69,7 @@ def users_view():
         }
         for user_id in data
     ]
-    return sorted(users, key=itemgetter('name'))
+    return sorted(users, cmp=locale.strcoll, key=itemgetter('name'))
 
 
 @app.route('/api/v1/mean_time_weekday/<int:user_id>', methods=['GET'])
