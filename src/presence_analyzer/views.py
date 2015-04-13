@@ -25,7 +25,7 @@ from presence_analyzer.utils import (
 )
 
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
-locale.setlocale(locale.LC_ALL, '')
+locale.setlocale(locale.LC_ALL, 'en_GB.utf-8')
 
 
 @app.route('/')
